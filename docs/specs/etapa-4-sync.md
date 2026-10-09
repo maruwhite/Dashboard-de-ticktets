@@ -104,5 +104,7 @@ Métricas, endpoints de negocio, UI, webhooks.
   en vivo: con un token inválido el sync falla con 401 y se conservan los 231 tickets.
 - Para los tickets creados a mano en Jira después de la carga, el sync usa los campos nativos
   (`created`, `resolutiondate`, responsable e informador de Jira).
-- Criterios 1, 3, 4 y 5 verificados. Criterio 2 (cambio en Jira reflejado en ≤ 5 minutos):
-  pendiente de prueba con Marisa.
+- Criterio 2 verificado en vivo: Marisa cambió PRJC-1 en Jira ("Cerrado" → "Análisis y Diseño
+  funcional") y lo devolvió a "Cerrado"; el sync automático, 5 minutos después del anterior y
+  sin intervención, reflejó el cambio.
+- Los 5 criterios de aceptación se cumplen.
