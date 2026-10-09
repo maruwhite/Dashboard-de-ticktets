@@ -109,7 +109,7 @@ Cualquier llamada a Jira (etapa 3).
 4. Las duraciones (resuelta − creada) son idénticas a las del original.
 5. La consola muestra solo conteos.
 6. `npm run check` pasa con coverage ≥ 80 % también en `seed`.
-7. Marisa revisó y aprobó el archivo.
+7. Marisa revisó y aprobó el archivo. ✅ Aprobado el 2026-10-09.
 
 ## Decisiones tomadas al aprobar
 
