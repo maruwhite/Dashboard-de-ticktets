@@ -121,3 +121,7 @@ Cualquier llamada a Jira (etapa 3).
    estado propio (grupo Completado).
 4. **"subtarea":** se convierte en "Tarea".
 5. **Prioridad:** se conserva tal cual (sin espacios sobrantes).
+6. **Cambio tras la primera revisión** ([ADR-0011](../adr/0011-reparto-de-personas.md)):
+   informadores y responsables de proyecto se reparten en hasta 20 usuarios equilibrando la
+   carga (reemplaza el punto 2), y el responsable se reparte entre 5 agentes ficticios
+   (dato no real).

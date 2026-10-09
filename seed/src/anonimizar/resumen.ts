@@ -28,6 +28,7 @@ export function generarResumen(datos: DatosResumen): string {
     .filter((f) => f !== '')
     .sort();
   const columna = (nombre: keyof TicketAnonimizado) => tickets.map((t) => t[nombre]);
+  const distintos = (valores: string[]) => new Set(valores.filter((v) => v !== '')).size;
 
   return [
     '# Resumen de la anonimización',
@@ -35,7 +36,8 @@ export function generarResumen(datos: DatosResumen): string {
     `- Generado: ${datos.generado.toISOString().slice(0, 16).replace('T', ' ')} (UTC)`,
     `- Tickets: ${String(tickets.length)}`,
     `- Tickets resueltos (con fecha de resolución): ${String(tickets.filter((t) => t.resuelta !== '').length)}`,
-    `- Personas distintas en el original: ${String(datos.personasOriginales)} → usuarios inventados: ${String(new Set([...columna('responsable'), ...columna('informador'), ...columna('responsable_proyecto')].filter((v) => v !== '')).size)}`,
+    `- Informadores y responsables de proyecto distintos en el original: ${String(datos.personasOriginales)} → usuarios inventados: ${String(distintos([...columna('informador'), ...columna('responsable_proyecto')]))}`,
+    `- Responsables: repartidos entre ${String(distintos(columna('responsable')))} agentes ficticios (**dato no real**, ver ADR-0011)`,
     `- Proyectos: ${String(datos.proyectosOriginales)}`,
     `- Rango de fechas (ya corridas): ${fechas[0] ?? '-'} → ${fechas.at(-1) ?? '-'}`,
     '',

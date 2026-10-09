@@ -17,7 +17,7 @@ aparecieron restricciones que obligan a precisar decisiones anteriores.
    hasta que se acepta la invitación. Los usuarios inventados (`Usuario 1` … `Usuario 9`)
    se guardan en campos personalizados de texto: "Responsable (dato)", "Informador (dato)"
    y "Responsable del proyecto (dato)".
-2. **Reparto en 9 usuarios:** las 8 personas con más apariciones tienen usuario propio; el
+2. **Reparto en 9 usuarios** (reemplazado por [ADR-0011](0011-reparto-de-personas.md)): las 8 personas con más apariciones tienen usuario propio; el
    resto se agrupa en `Usuario 9`.
 3. **Estados** (modifica ADR-0005): solo "Finalizada" se unifica en "Finalizado". "Cerrado"
    es un estado propio dentro del grupo Completado.

@@ -47,7 +47,10 @@ export interface ResultadoAnonimizacion {
   proyectosOriginales: number;
 }
 
-const MAX_USUARIOS = 9;
+export const MAX_USUARIOS = 20;
+/** Equipo ficticio de responsables con su peso relativo: un reparto desparejo, como en la realidad. */
+const PESOS_AGENTES = [32, 26, 20, 14, 8];
+const SEMILLA_AGENTES = 20261009;
 const LETRAS_GRIEGAS = [
   'Alfa', 'Beta', 'Gamma', 'Delta', 'Épsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda',
   'Mu', 'Nu', 'Xi', 'Ómicron', 'Pi', 'Rho', 'Sigma', 'Tau', 'Ípsilon', 'Phi', 'Chi', 'Psi', 'Omega',
@@ -65,18 +68,61 @@ function ordenarPorFrecuencia(valores: string[]): string[] {
 }
 
 /**
- * Personas → `Usuario 1` … `Usuario 9`, con el mismo usuario para la misma persona en las
- * tres columnas. Si hay más de 9, las 8 más frecuentes tienen usuario propio y el resto
- * comparte `Usuario 9` (ADR-0010).
+ * Informadores y responsables de proyecto → `Usuario 1` … `Usuario 20` (ADR-0011). La misma
+ * persona real es siempre el mismo usuario. Si hay más personas que usuarios, se reparten
+ * para equilibrar la carga: de la más frecuente a la menos, cada una va al usuario con menos
+ * apariciones acumuladas. Al final, `Usuario 1` es el de más apariciones.
  */
 function mapearPersonas(tickets: readonly TicketExport[]): Map<string, string> {
-  const ordenadas = ordenarPorFrecuencia(
-    tickets.flatMap((t) => [t.responsable, t.informador, t.responsableProyecto]),
-  );
-  const propios = ordenadas.length <= MAX_USUARIOS ? MAX_USUARIOS : MAX_USUARIOS - 1;
-  return new Map(
-    ordenadas.map((persona, i) => [persona, `Usuario ${String(Math.min(i, propios) + 1)}`]),
-  );
+  const valores = tickets.flatMap((t) => [t.informador, t.responsableProyecto]);
+  const conteo = new Map<string, number>();
+  for (const valor of valores) {
+    if (valor !== '') conteo.set(valor, (conteo.get(valor) ?? 0) + 1);
+  }
+
+  const grupos = Array.from({ length: Math.min(MAX_USUARIOS, conteo.size) }, (_, indice) => ({
+    indice,
+    carga: 0,
+    personas: [] as string[],
+  }));
+  for (const persona of ordenarPorFrecuencia(valores)) {
+    const destino = grupos.reduce((menor, grupo) => (grupo.carga < menor.carga ? grupo : menor));
+    destino.carga += conteo.get(persona) ?? 0;
+    destino.personas.push(persona);
+  }
+
+  const mapa = new Map<string, string>();
+  [...grupos]
+    .sort((a, b) => b.carga - a.carga || a.indice - b.indice)
+    .forEach((grupo, i) => {
+      for (const persona of grupo.personas) mapa.set(persona, `Usuario ${String(i + 1)}`);
+    });
+  return mapa;
+}
+
+/** Generador pseudoaleatorio con semilla (mulberry32): mismo resultado en cada ejecución. */
+function crearAleatorio(semilla: number): () => number {
+  let estado = semilla;
+  return () => {
+    estado = (estado + 0x6d2b79f5) | 0;
+    let t = Math.imul(estado ^ (estado >>> 15), 1 | estado);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * El export tiene un único responsable: se reparte entre un equipo ficticio de agentes
+ * (ADR-0011). Este dato no es real; es determinístico para que no cambie entre ejecuciones.
+ */
+function crearAsignadorDeAgentes(): () => string {
+  const aleatorio = crearAleatorio(SEMILLA_AGENTES);
+  const total = PESOS_AGENTES.reduce((suma, peso) => suma + peso, 0);
+  return () => {
+    let resto = aleatorio() * total;
+    const indice = PESOS_AGENTES.findIndex((peso) => (resto -= peso) < 0);
+    return `Agente ${String(indice + 1)}`;
+  };
 }
 
 function mapearProyectos(
@@ -133,6 +179,7 @@ export function anonimizar(
   const personas = mapearPersonas(tickets);
   const proyectos = mapearProyectos(tickets);
   const titulo = crearGeneradorDeTitulos();
+  const agente = crearAsignadorDeAgentes();
   const persona = (nombre: string) => personas.get(nombre) ?? '';
 
   const ordenados = [...conFechas].sort(
@@ -151,7 +198,7 @@ export function anonimizar(
       tipo_proyecto: ticket.tipoProyecto,
       proyecto_clave: proyecto?.clave ?? '',
       proyecto_nombre: proyecto?.nombre ?? '',
-      responsable: persona(ticket.responsable),
+      responsable: ticket.responsable === '' ? '' : agente(),
       informador: persona(ticket.informador),
       responsable_proyecto: persona(ticket.responsableProyecto),
       titulo: titulo(tipo),

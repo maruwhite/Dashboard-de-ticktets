@@ -40,7 +40,10 @@ describe('generarResumen', () => {
     expect(resumen).toContain('- Generado: 2026-10-09 12:00 (UTC)');
     expect(resumen).toContain('- Tickets: 3');
     expect(resumen).toContain('- Tickets resueltos (con fecha de resolución): 1');
-    expect(resumen).toContain('- Personas distintas en el original: 3 → usuarios inventados: 3');
+    expect(resumen).toContain(
+      '- Informadores y responsables de proyecto distintos en el original: 3 → usuarios inventados: 2',
+    );
+    expect(resumen).toContain('- Responsables: repartidos entre 1 agentes ficticios');
     expect(resumen).toContain(
       '- Rango de fechas (ya corridas): 2026-09-01 09:00 → 2026-10-05 08:00',
     );

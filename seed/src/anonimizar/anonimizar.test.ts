@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { anonimizar, COLUMNAS_SALIDA, contarFugas } from './anonimizar.js';
+import { anonimizar, COLUMNAS_SALIDA, contarFugas, MAX_USUARIOS } from './anonimizar.js';
 import { parseFechaJira } from './fechas.js';
 import { ticketDePrueba } from './fixtures.js';
 
@@ -19,58 +19,78 @@ describe('anonimizar', () => {
       tipo_proyecto: 'software',
       proyecto_clave: 'PRJA',
       proyecto_nombre: 'Proyecto Alfa',
+      informador: 'Usuario 2',
+      responsable_proyecto: 'Usuario 1',
     });
-    expect([ticket?.responsable, ticket?.informador, ticket?.responsable_proyecto]).toEqual(
-      expect.arrayContaining(['Usuario 1', 'Usuario 2', 'Usuario 3']),
-    );
+    expect(ticket?.responsable).toMatch(/^Agente [1-5]$/);
     expect(ticket?.titulo).not.toBe('Titulo inventado uno');
     expect(Object.keys(ticket ?? {})).toEqual(COLUMNAS_SALIDA);
   });
 
-  it('usa el mismo usuario para la misma persona en las tres columnas', () => {
+  it('usa el mismo usuario para la misma persona como informador y responsable de proyecto', () => {
     const { tickets } = anonimizar(
       [
-        ticketDePrueba({ responsable: 'Ana Ficticia', informador: 'Beto Ficticio' }),
-        ticketDePrueba({ responsable: 'Beto Ficticio', informador: 'Ana Ficticia' }),
+        ticketDePrueba({ informador: 'Ana Ficticia', responsableProyecto: 'Beto Ficticio' }),
+        ticketDePrueba({ informador: 'Beto Ficticio', responsableProyecto: 'Ana Ficticia' }),
       ],
       opciones,
     );
-    expect(tickets[0]?.responsable).toBe(tickets[1]?.informador);
-    expect(tickets[0]?.informador).toBe(tickets[1]?.responsable);
+    expect(tickets[0]?.informador).toBe(tickets[1]?.responsable_proyecto);
+    expect(tickets[0]?.responsable_proyecto).toBe(tickets[1]?.informador);
+    expect(tickets[0]?.informador).not.toBe(tickets[0]?.responsable_proyecto);
   });
 
-  it('con más de 9 personas, las 8 más frecuentes tienen usuario propio y el resto comparte Usuario 9', () => {
-    const informadores = Array.from({ length: 12 }, (_, i) => `Informador ${String(i)}`);
-    const tickets = informadores.flatMap((nombre, i) =>
-      // El informador i aparece 12 - i veces: el orden por frecuencia es predecible.
-      Array.from({ length: 12 - i }, () =>
-        ticketDePrueba({ informador: nombre, responsable: '', responsableProyecto: '' }),
+  it(`con más de ${String(MAX_USUARIOS)} personas, las reparte equilibrando la carga`, () => {
+    // 30 informadores: el i-ésimo aparece 30 - i veces.
+    const tickets = Array.from({ length: 30 }, (_, i) =>
+      Array.from({ length: 30 - i }, () =>
+        ticketDePrueba({ informador: `Informador ${String(i)}`, responsableProyecto: '' }),
       ),
-    );
+    ).flat();
 
     const resultado = anonimizar(tickets, opciones);
-    const usuarios = new Set(resultado.tickets.map((t) => t.informador));
+    const carga = new Map<string, number>();
+    for (const t of resultado.tickets) carga.set(t.informador, (carga.get(t.informador) ?? 0) + 1);
+    const cargas = [...carga.values()];
 
-    expect(resultado.personasOriginales).toBe(12);
-    expect(usuarios.size).toBe(9);
-    expect(resultado.tickets.filter((t) => t.informador === 'Usuario 1')).toHaveLength(12);
-    expect(resultado.tickets.filter((t) => t.informador === 'Usuario 9')).toHaveLength(
-      4 + 3 + 2 + 1,
-    );
-    expect(resultado.tickets.every((t) => t.responsable === '')).toBe(true);
+    expect(resultado.personasOriginales).toBe(30);
+    expect(carga.size).toBe(MAX_USUARIOS);
+    expect(Math.max(...cargas) - Math.min(...cargas)).toBeLessThanOrEqual(10);
+    expect(carga.get('Usuario 1')).toBe(Math.max(...cargas));
   });
 
-  it('con hasta 9 personas, cada una tiene usuario propio', () => {
-    const tickets = Array.from({ length: 9 }, (_, i) =>
-      ticketDePrueba({
-        informador: `Persona ${String(i)}`,
-        responsable: '',
-        responsableProyecto: '',
-      }),
+  it(`con hasta ${String(MAX_USUARIOS)} personas, cada una tiene usuario propio`, () => {
+    const tickets = Array.from({ length: 5 }, (_, i) =>
+      ticketDePrueba({ informador: `Persona ${String(i)}`, responsableProyecto: '' }),
     );
     const usuarios = new Set(anonimizar(tickets, opciones).tickets.map((t) => t.informador));
-    expect(usuarios.size).toBe(9);
-    expect(usuarios.has('Usuario 9')).toBe(true);
+    expect(usuarios).toEqual(
+      new Set(['Usuario 1', 'Usuario 2', 'Usuario 3', 'Usuario 4', 'Usuario 5']),
+    );
+  });
+
+  it('reparte los responsables entre 5 agentes ficticios, de forma desigual y determinística', () => {
+    const tickets = Array.from({ length: 300 }, () => ticketDePrueba());
+    const primera = anonimizar(tickets, opciones).tickets.map((t) => t.responsable);
+    const segunda = anonimizar(tickets, opciones).tickets.map((t) => t.responsable);
+
+    const conteo = new Map<string, number>();
+    for (const agente of primera) conteo.set(agente, (conteo.get(agente) ?? 0) + 1);
+
+    expect(primera).toEqual(segunda);
+    expect([...conteo.keys()].sort()).toEqual([
+      'Agente 1',
+      'Agente 2',
+      'Agente 3',
+      'Agente 4',
+      'Agente 5',
+    ]);
+    expect(conteo.get('Agente 1')).toBeGreaterThan(conteo.get('Agente 5') ?? 0);
+  });
+
+  it('deja sin responsable los tickets que no lo tenían', () => {
+    const { tickets } = anonimizar([ticketDePrueba({ responsable: '' })], opciones);
+    expect(tickets[0]?.responsable).toBe('');
   });
 
   it('asigna PRJA al proyecto con más tickets', () => {
