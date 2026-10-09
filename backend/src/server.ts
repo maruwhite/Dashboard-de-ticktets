@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { configJira, loadConfig } from './config.js';
 import { abrirBase } from './db/base.js';
+import { cargarDemo } from './demo/cargar.js';
 import { Repositorio } from './db/repositorio.js';
 import { ClienteJira } from './jira/cliente.js';
 import { createLogger } from './logger.js';
@@ -32,8 +33,18 @@ if (config.SYNC_ENABLED) {
   programador = new ProgramadorDeSync(sincronizador, config.SYNC_INTERVAL_MINUTES * 60_000);
   programador.iniciar();
   logger.info({ cadaMinutos: config.SYNC_INTERVAL_MINUTES }, 'Sync con Jira activado');
-} else {
-  logger.warn('Sync con Jira desactivado (SYNC_ENABLED=false)');
+}
+
+// Sin Jira: modo demo con la foto anonimizada del repo (ADR-0014).
+let modoDemo = false;
+if (!config.SYNC_ENABLED) {
+  try {
+    const cantidad = await cargarDemo(repositorio);
+    modoDemo = true;
+    logger.warn({ tickets: cantidad }, 'Modo demo: sin Jira, se cargó la foto anonimizada');
+  } catch (error) {
+    logger.warn({ err: error }, 'Sync desactivado y sin foto de demo disponible');
+  }
 }
 
 const app = createApp({
@@ -42,6 +53,7 @@ const app = createApp({
   sync: {
     activo: config.SYNC_ENABLED,
     intervaloMinutos: config.SYNC_INTERVAL_MINUTES,
+    modoDemo,
     ...(sincronizador ? { sincronizador } : {}),
   },
 });

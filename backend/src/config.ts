@@ -33,9 +33,8 @@ const envSchema = z
       z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
     ),
     DATABASE_PATH: opcional(z.string().default('data/dashboard.db')),
-    SYNC_ENABLED: opcional(z.enum(['true', 'false']).default('true')).transform(
-      (v) => v === 'true',
-    ),
+    // Sin valor explícito: activado si hay JIRA_BASE_URL; si no, modo demo (ADR-0014).
+    SYNC_ENABLED: opcional(z.enum(['true', 'false']).optional()),
     SYNC_INTERVAL_MINUTES: opcional(z.coerce.number().int().min(1).max(1440).default(5)),
     JIRA_BASE_URL: opcional(z.url().optional()),
     JIRA_EMAIL: opcional(z.email().optional()),
@@ -49,6 +48,13 @@ const envSchema = z
     JIRA_FIELD_INFORMADOR: opcional(idDeCampo.optional()),
     JIRA_FIELD_RESPONSABLE_PROYECTO: opcional(idDeCampo.optional()),
   })
+  .transform((env) => ({
+    ...env,
+    SYNC_ENABLED:
+      env.SYNC_ENABLED === undefined
+        ? env.JIRA_BASE_URL !== undefined
+        : env.SYNC_ENABLED === 'true',
+  }))
   .superRefine((env, ctx) => {
     if (!env.SYNC_ENABLED) return;
     for (const variable of OBLIGATORIAS_PARA_SYNC) {

@@ -52,7 +52,9 @@ export function Encabezado({ sync, ahora, tema, alternarTema, alSincronizar }: P
       <div>
         <h1>Dashboard de tickets</h1>
         <p className="secundario" aria-live="polite">
-          {exitoso ? (
+          {sync?.modoDemo ? (
+            'Datos de demostración: foto anonimizada incluida en el repositorio'
+          ) : exitoso ? (
             <>
               Actualizado{' '}
               <time dateTime={exitoso.fin} title={formatearFechaHora(exitoso.fin)}>
@@ -64,6 +66,13 @@ export function Encabezado({ sync, ahora, tema, alternarTema, alSincronizar }: P
             'Todavía no hay datos sincronizados'
           )}
         </p>
+        {sync?.modoDemo && (
+          <p className="aviso aviso-info" role="note">
+            <span aria-hidden="true">ℹ</span> <strong>Modo demo:</strong> datos anonimizados de
+            ejemplo, sin sincronización con Jira. Para datos en vivo, configurá{' '}
+            <code>backend/.env</code> (ver README).
+          </p>
+        )}
         {fallo && (
           <p className="aviso aviso-error" role="alert">
             <span aria-hidden="true">⚠</span> El último sync falló:{' '}

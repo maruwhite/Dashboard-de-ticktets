@@ -15,6 +15,8 @@ export interface DependenciasApp {
   sync: {
     activo: boolean;
     intervaloMinutos: number;
+    /** Se muestran los datos de la foto anonimizada (ADR-0014). */
+    modoDemo?: boolean;
     /** Ausente si el sync está desactivado. */
     sincronizador?: Pick<Sincronizador, 'sincronizar'>;
   };

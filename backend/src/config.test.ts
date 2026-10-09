@@ -37,16 +37,29 @@ describe('loadConfig', () => {
     expect(config.JIRA_API_TOKEN).toBeUndefined();
   });
 
-  it('con el sync activado (por defecto) exige credenciales y campos, nombrándolos', () => {
+  it('sin JIRA_BASE_URL ni SYNC_ENABLED, el sync se desactiva (modo demo)', () => {
+    expect(loadConfig({}).SYNC_ENABLED).toBe(false);
+    expect(loadConfig({ JIRA_API_TOKEN: 'token-de-prueba' }).SYNC_ENABLED).toBe(false);
+  });
+
+  it('con JIRA_BASE_URL el sync se activa solo y exige el resto, nombrándolo', () => {
     let mensaje = '';
     try {
-      loadConfig({ JIRA_API_TOKEN: 'token-de-prueba' });
+      loadConfig({
+        JIRA_BASE_URL: 'https://ejemplo.atlassian.net',
+        JIRA_API_TOKEN: 'token-de-prueba',
+      });
     } catch (error) {
       mensaje = (error as Error).message;
     }
-    expect(mensaje).toContain('JIRA_BASE_URL: obligatoria con el sync activado');
+    expect(mensaje).toContain('JIRA_EMAIL: obligatoria con el sync activado');
     expect(mensaje).toContain('JIRA_FIELD_RESPONSABLE_PROYECTO');
     expect(mensaje).not.toContain('JIRA_API_TOKEN:');
+  });
+
+  it('SYNC_ENABLED explícito manda sobre la detección automática', () => {
+    expect(loadConfig({ ...conSync, SYNC_ENABLED: 'false' }).SYNC_ENABLED).toBe(false);
+    expect(() => loadConfig({ SYNC_ENABLED: 'true' })).toThrow(/JIRA_BASE_URL: obligatoria/);
   });
 
   it('lee la configuración completa del sync', () => {

@@ -29,19 +29,32 @@ Jira (API) ──sync cada 5 min──► backend (Express + SQLite) ──API R
 - Node.js 24 LTS (ver `.nvmrc`)
 - npm (incluido con Node)
 
-## Puesta en marcha
+## Probarlo en 2 minutos (modo demo)
 
 ```bash
+git clone https://github.com/maruwhite/Dashboard-de-ticktets.git
+cd Dashboard-de-ticktets
 npm install
-cp backend/.env.example backend/.env   # completar las variables de Jira
 npm run dev
 ```
 
+Abrir http://localhost:5173. Sin configurar nada, el backend arranca en **modo demo**: carga
+una foto de 231 tickets **anonimizados** (`backend/demo/tickets.json`) y el dashboard funciona
+completo (KPIs, gráficos, filtros, tendencia). Un aviso en pantalla indica que es una demo sin
+sincronización. Ver [ADR-0014](docs/adr/0014-modo-demo.md).
+
+## Con datos en vivo desde Jira
+
+```bash
+cp backend/.env.example backend/.env   # completar JIRA_BASE_URL, credenciales e ids de campos
+npm run dev
+```
+
+Con `JIRA_BASE_URL` configurado, el backend sincroniza los tickets de Jira en SQLite al
+arrancar y cada 5 minutos, y el botón "Sincronizar ahora" fuerza un sync.
+
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000/api/health
-
-Al arrancar, el backend sincroniza los tickets de Jira en SQLite y repite cada 5 minutos. Sin
-credenciales de Jira, poner `SYNC_ENABLED=false` en `backend/.env`.
 
 ## Datos de prueba en Jira
 

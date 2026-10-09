@@ -87,6 +87,7 @@ describe('GET /api/dashboard', () => {
     expect(cuerpo).toMatchObject(calcularDashboard(TICKETS, {}, AHORA));
     expect(cuerpo.sync).toEqual({
       activo: true,
+      modoDemo: false,
       intervaloMinutos: 5,
       ultimoIntento: { fin: '2026-10-09T15:00:00.000Z', ok: false, error: 'Jira respondió 503' },
       ultimoExitoso: { fin: '2026-10-09T14:55:00.000Z', tickets: 3 },
