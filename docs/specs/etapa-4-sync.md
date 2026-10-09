@@ -92,3 +92,19 @@ Métricas, endpoints de negocio, UI, webhooks.
 3. **Personas** (opción B de la etapa 3): responsable, informador y responsable del
    proyecto se leen de los campos personalizados; no hace falta consultar
    `/rest/api/3/project/{clave}`.
+
+## Resultado
+
+- Primer sync real (2026-10-09): 231 tickets en ~3 s; la base coincide campo por campo con
+  `data/anonimizado/tickets.csv` (fechas guardadas en UTC).
+- **Hallazgo:** con credenciales inválidas, `POST /rest/api/3/search/jql` de Jira Cloud no
+  responde 401 sino 200 sin resultados (como usuario anónimo), y el primer sync dejó la base
+  vacía. Se agregaron dos protecciones: cada sync verifica primero las credenciales con
+  `GET /rest/api/3/myself`, y un resultado de 0 tickets no reemplaza una base con datos. Probado
+  en vivo: con un token inválido el sync falla con 401 y se conservan los 231 tickets.
+- Para los tickets creados a mano en Jira después de la carga, el sync usa los campos nativos
+  (`created`, `resolutiondate`, responsable e informador de Jira).
+- Criterio 2 verificado en vivo: Marisa cambió PRJC-1 en Jira ("Cerrado" → "Análisis y Diseño
+  funcional") y lo devolvió a "Cerrado"; el sync automático, 5 minutos después del anterior y
+  sin intervención, reflejó el cambio.
+- Los 5 criterios de aceptación se cumplen.
