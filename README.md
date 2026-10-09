@@ -4,8 +4,8 @@ Dashboard con backend propio que muestra el **estado real** de los tickets de Ji
 cargar nada a mano: el backend sincroniza contra la API de Jira cada 5 minutos y el
 frontend consume solo la API propia.
 
-> **Estado:** etapas 1 a 4 completas (estructura, anonimización, carga a Jira y sync). Ver el
-> plan en [ADR-0009](docs/adr/0009-proceso-por-etapas.md).
+> **Estado:** las 7 etapas están completas: estructura, anonimización, carga a Jira, sync, métricas,
+> endpoints y UI. Ver el plan en [ADR-0009](docs/adr/0009-proceso-por-etapas.md).
 
 ## Arquitectura
 

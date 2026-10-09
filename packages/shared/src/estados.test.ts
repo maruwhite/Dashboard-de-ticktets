@@ -42,8 +42,9 @@ describe('esAbierto', () => {
 });
 
 describe('tipoDeGrafico', () => {
-  it('torta con 1 a 6 categorías, barras con más o con ninguna', () => {
-    expect(tipoDeGrafico(1)).toBe('torta');
+  it('torta con 2 a 6 categorías; barras con una sola, con más de 6 o con ninguna', () => {
+    expect(tipoDeGrafico(1)).toBe('barras');
+    expect(tipoDeGrafico(2)).toBe('torta');
     expect(tipoDeGrafico(MAXIMO_CATEGORIAS_TORTA)).toBe('torta');
     expect(tipoDeGrafico(MAXIMO_CATEGORIAS_TORTA + 1)).toBe('barras');
     expect(tipoDeGrafico(0)).toBe('barras');
