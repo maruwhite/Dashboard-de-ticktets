@@ -95,3 +95,29 @@ export interface Dashboard {
 }
 
 export const SIN_DATO = '(sin dato)';
+
+/** Estado del sync con Jira, para mostrar la antigüedad de los datos. */
+export interface EstadoSync {
+  /** Si el backend sincroniza con Jira (SYNC_ENABLED). */
+  activo: boolean;
+  intervaloMinutos: number;
+  ultimoIntento: { fin: string; ok: boolean; error: string | null } | null;
+  /** Antigüedad real de los datos que se muestran. */
+  ultimoExitoso: { fin: string; tickets: number } | null;
+}
+
+/** `GET /api/dashboard` */
+export interface RespuestaDashboard extends Dashboard {
+  sync: EstadoSync;
+}
+
+/** `POST /api/sync` (200) */
+export interface RespuestaSync {
+  tickets: number;
+  sync: EstadoSync;
+}
+
+/** Cualquier respuesta de error de la API. */
+export interface RespuestaError {
+  error: string;
+}
