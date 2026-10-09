@@ -4,8 +4,8 @@ Dashboard con backend propio que muestra el **estado real** de los tickets de Ji
 cargar nada a mano: el backend sincroniza contra la API de Jira cada 5 minutos y el
 frontend consume solo la API propia.
 
-> **Estado:** etapa 1 (estructura y harness de calidad). Ver el plan en
-> [ADR-0009](docs/adr/0009-proceso-por-etapas.md).
+> **Estado:** etapas 1 a 4 completas (estructura, anonimización, carga a Jira y sync). Ver el
+> plan en [ADR-0009](docs/adr/0009-proceso-por-etapas.md).
 
 ## Arquitectura
 
@@ -18,6 +18,7 @@ Jira (API) ──sync cada 5 min──► backend (Express + SQLite) ──API R
 | `backend/`         | API propia (Node + Express + TypeScript)                                 |
 | `frontend/`        | Dashboard (React + Vite + Recharts)                                      |
 | `packages/shared/` | Tipos y lógica compartida entre backend y frontend                       |
+| `seed/`            | Scripts de anonimización y carga a Jira (se usan una sola vez)           |
 | `tools/`           | Utilidades del repo (verificación de archivos en el pre-commit)          |
 | `docs/adr/`        | Decisiones de arquitectura                                               |
 | `docs/specs/`      | Especificación de cada etapa                                             |
@@ -32,12 +33,31 @@ Jira (API) ──sync cada 5 min──► backend (Express + SQLite) ──API R
 
 ```bash
 npm install
-cp backend/.env.example backend/.env   # completar si hace falta; en la etapa 1 es opcional
+cp backend/.env.example backend/.env   # completar las variables de Jira
 npm run dev
 ```
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000/api/health
+
+Al arrancar, el backend sincroniza los tickets de Jira en SQLite y repite cada 5 minutos. Sin
+credenciales de Jira, poner `SYNC_ENABLED=false` en `backend/.env`.
+
+## Datos de prueba en Jira
+
+Los datos del dashboard vienen de un Jira Cloud de prueba, poblado una única vez a partir de
+un export real **anonimizado** ([etapa 2](docs/specs/etapa-2-anonimizacion.md),
+[etapa 3](docs/specs/etapa-3-carga-a-jira.md)):
+
+```bash
+npm run anonimizar -w seed                   # data/Tickets_jira.xlsx → data/anonimizado/
+npm run jira:preparar -w seed -- --confirmar # configura el sitio de Jira
+npm run jira:cargar -w seed -- --confirmar   # carga los tickets
+```
+
+Sin `--confirmar`, los dos últimos corren en modo simulación. El **responsable** de cada
+ticket es un dato ficticio ([ADR-0011](docs/adr/0011-reparto-de-personas.md)); el resto de
+los campos refleja datos reales anonimizados.
 
 ## Validaciones
 
