@@ -1,6 +1,8 @@
 # Datos reales y exports (nunca se suben)
 data/
 *.csv
+*.xlsx
+*.xls
 !**/sample*.csv
 !**/ejemplo*.csv
 
@@ -13,6 +15,7 @@ data/
 node_modules/
 dist/
 build/
+coverage/
 __pycache__/
 *.pyc
 .venv/
