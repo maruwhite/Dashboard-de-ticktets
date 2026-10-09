@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
+    "demo:exportar": "tsx src/demo/cli-exportar.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

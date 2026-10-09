@@ -78,6 +78,7 @@ export function dashboardDePrueba(cambios: Partial<RespuestaDashboard> = {}): Re
     },
     sync: {
       activo: true,
+      modoDemo: false,
       intervaloMinutos: 5,
       ultimoIntento: { fin: '2026-10-09T14:57:00.000Z', ok: true, error: null },
       ultimoExitoso: { fin: '2026-10-09T14:57:00.000Z', tickets: 1234 },

@@ -100,6 +100,8 @@ export const SIN_DATO = '(sin dato)';
 export interface EstadoSync {
   /** Si el backend sincroniza con Jira (SYNC_ENABLED). */
   activo: boolean;
+  /** Datos de la foto anonimizada del repo, sin sincronización (ADR-0014). */
+  modoDemo: boolean;
   intervaloMinutos: number;
   ultimoIntento: { fin: string; ok: boolean; error: string | null } | null;
   /** Antigüedad real de los datos que se muestran. */

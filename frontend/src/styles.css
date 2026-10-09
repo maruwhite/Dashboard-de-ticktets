@@ -227,6 +227,12 @@ input {
   font-size: 0.875rem;
 }
 
+.aviso-info {
+  background: var(--acento-suave);
+  color: var(--texto);
+  border: 1px solid var(--acento);
+}
+
 .aviso-error {
   background: var(--error-fondo);
   color: var(--error);

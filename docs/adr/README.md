@@ -19,3 +19,4 @@ como "Reemplazado por ADR-XXXX".
 | [0011](0011-reparto-de-personas.md)           | Reparto de personas y equipo ficticio de responsables | Aceptado                       |
 | [0012](0012-configuracion-de-jira-cloud.md)   | Configuración de Jira Cloud para la carga             | Aceptado                       |
 | [0013](0013-estilo-visual-y-paleta.md)        | Estilo visual y paleta de colores                     | Aceptado                       |
+| [0014](0014-modo-demo.md)                     | Modo demo con una foto anonimizada en el repo         | Aceptado                       |

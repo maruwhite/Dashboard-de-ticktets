@@ -29,6 +29,10 @@ nunca de archivos locales. Ver [ADR-0002](docs/adr/0002-arquitectura-y-flujo-de-
   aparecer en código, tests, fixtures, logs, mensajes de commit, issues ni en respuestas
   que se copien al repo. Los tests usan datos inventados.
 - No se sube nada a Jira sin que Marisa haya revisado y aprobado el archivo anonimizado.
+- **Única excepción de datos en el repo:** `backend/demo/tickets.json`, la foto anonimizada
+  para el modo demo ([ADR-0014](docs/adr/0014-modo-demo.md)). Se regenera con
+  `npm run demo:exportar -w backend` y **siempre** se verifica con
+  `npm run demo:verificar -w seed` antes de commitearla.
 - Reglas de anonimización: [ADR-0003](docs/adr/0003-anonimizacion.md).
 
 ## Seguridad

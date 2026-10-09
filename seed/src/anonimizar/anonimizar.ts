@@ -215,17 +215,14 @@ export function anonimizar(
 }
 
 /**
- * Cuenta celdas de la salida que contienen algún valor sensible del original (personas,
- * proyectos, títulos, claves). Devuelve solo la cantidad: nunca los valores.
+ * Valores del export que nunca pueden aparecer en una salida: personas, proyectos, títulos y
+ * claves. Se excluyen los campos que se conservan a propósito y los valores muy cortos.
  */
-export function contarFugas(
-  salida: readonly TicketAnonimizado[],
-  originales: readonly TicketExport[],
-): number {
+export function valoresSensibles(originales: readonly TicketExport[]): Set<string> {
   const conservados = new Set(
     originales.flatMap((t) => [t.tipoIncidencia, t.estado, t.prioridad, t.tipoProyecto]),
   );
-  const sensibles = new Set(
+  return new Set(
     originales
       .flatMap((t) => [
         t.responsable,
@@ -238,7 +235,17 @@ export function contarFugas(
       ])
       .filter((valor) => valor.length >= 3 && !conservados.has(valor)),
   );
+}
 
+/**
+ * Cuenta celdas de la salida que contienen algún valor sensible del original (personas,
+ * proyectos, títulos, claves). Devuelve solo la cantidad: nunca los valores.
+ */
+export function contarFugas(
+  salida: readonly TicketAnonimizado[],
+  originales: readonly TicketExport[],
+): number {
+  const sensibles = valoresSensibles(originales);
   let fugas = 0;
   for (const ticket of salida) {
     for (const columna of COLUMNAS_SALIDA) {

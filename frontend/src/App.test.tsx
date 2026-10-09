@@ -78,6 +78,30 @@ describe('carga y KPIs', () => {
     expect(screen.getByText(/se sincroniza cada 5 min/)).toBeInTheDocument();
   });
 
+  it('en modo demo lo indica con un aviso y no ofrece sincronizar', async () => {
+    const base = dashboardDePrueba();
+    simularApi({
+      dashboard: () => ({
+        cuerpo: dashboardDePrueba({
+          sync: {
+            ...base.sync,
+            activo: false,
+            modoDemo: true,
+            ultimoIntento: null,
+            ultimoExitoso: null,
+          },
+        }),
+      }),
+    });
+    render(<App />);
+
+    expect(await screen.findByRole('note')).toHaveTextContent(
+      'Modo demo: datos anonimizados de ejemplo',
+    );
+    expect(screen.getByText(/Datos de demostración/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sincronizar ahora/ })).toBeDisabled();
+  });
+
   it('avisa si el último sync falló, mostrando la antigüedad de los datos', async () => {
     const base = dashboardDePrueba();
     simularApi({
