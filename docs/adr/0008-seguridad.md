@@ -19,7 +19,7 @@ importados, y los datos derivan de información real de la empresa.
   - el logger redacta `Authorization`, `*_TOKEN`, `*_SECRET` y similares;
   - los errores de Jira se registran resumidos, sin cabeceras ni cuerpos.
 - `data/`, `*.csv`, `*.xlsx`, `*.xls` y `.env*` están excluidos de git.
-- Se recomienda activar *secret scanning* y *push protection* en GitHub.
+- Se recomienda activar _secret scanning_ y _push protection_ en GitHub.
 
 ## Consecuencias
 

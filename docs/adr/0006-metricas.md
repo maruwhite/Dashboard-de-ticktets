@@ -14,16 +14,16 @@ interpretación. Se fijan acá para que backend, tests y UI usen las mismas.
 Todas las métricas se calculan sobre el conjunto de tickets **ya filtrado** por los
 segmentadores. Grupos de estado según ADR-0005.
 
-| KPI | Definición |
-|---|---|
-| Total | Cantidad de tickets. |
-| Abiertos | Grupos Por hacer + En curso + En espera. **[a confirmar]** |
-| En curso | Grupo En curso. |
-| En espera | Grupo En espera. |
-| Completados | Grupo Completado. |
-| Descartados | Grupo Descartado. |
-| Estancados | Abiertos con más de 3 días sin cambios (ver nota). |
-| Vencidos | Abiertos con fecha de vencimiento anterior a hoy. Sin fecha de vencimiento → no vencido. **[a confirmar]** |
+| KPI         | Definición                                                                                                 |
+| ----------- | ---------------------------------------------------------------------------------------------------------- |
+| Total       | Cantidad de tickets.                                                                                       |
+| Abiertos    | Grupos Por hacer + En curso + En espera. **[a confirmar]**                                                 |
+| En curso    | Grupo En curso.                                                                                            |
+| En espera   | Grupo En espera.                                                                                           |
+| Completados | Grupo Completado.                                                                                          |
+| Descartados | Grupo Descartado.                                                                                          |
+| Estancados  | Abiertos con más de 3 días sin cambios (ver nota).                                                         |
+| Vencidos    | Abiertos con fecha de vencimiento anterior a hoy. Sin fecha de vencimiento → no vencido. **[a confirmar]** |
 
 - **Cycle time:** desde la fecha de creación (campo personalizado) hasta la fecha de
   resolución, solo para Completados. Descartados excluidos. **[a confirmar: si se quiere

@@ -10,13 +10,13 @@ necesitan agruparlos de forma estable.
 
 ## Decisión
 
-| Grupo | Estados |
-|---|---|
-| **Por hacer** | Planificado |
-| **En curso** | Análisis y Estimación, Análisis y Diseño funcional, En curso |
-| **En espera** | Solicitud información a Usuario, Pausado |
+| Grupo          | Estados                                                           |
+| -------------- | ----------------------------------------------------------------- |
+| **Por hacer**  | Planificado                                                       |
+| **En curso**   | Análisis y Estimación, Análisis y Diseño funcional, En curso      |
+| **En espera**  | Solicitud información a Usuario, Pausado                          |
 | **Completado** | Cerrado, Finalizado, Finalizada → se unifican como **Finalizado** |
-| **Descartado** | Cancelado, Rechazado |
+| **Descartado** | Cancelado, Rechazado                                              |
 
 - Los **descartados no cuentan como completados** ni entran en el cycle time.
 - El mapeo vive en **un único módulo** del paquete compartido; backend y frontend lo

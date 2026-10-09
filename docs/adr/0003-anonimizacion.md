@@ -11,12 +11,12 @@ personal fuera del control de la empresa.
 
 ## Decisión
 
-| Tratamiento | Campos |
-|---|---|
-| **Se conservan** | Tipo de incidencia, estado, prioridad, tipo de proyecto |
-| **Se reemplazan** | Personas → hasta 9 usuarios inventados del Jira personal · Proyectos → `PRJA "Proyecto Alfa"`, `PRJB "Proyecto Beta"`… · Títulos → texto generado |
-| **Se descartan** | Descripciones, comentarios, mails |
-| **Se transforman** | Fechas: todas corridas por el mismo offset (se conservan las duraciones) |
+| Tratamiento        | Campos                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Se conservan**   | Tipo de incidencia, estado, prioridad, tipo de proyecto                                                                                           |
+| **Se reemplazan**  | Personas → hasta 9 usuarios inventados del Jira personal · Proyectos → `PRJA "Proyecto Alfa"`, `PRJB "Proyecto Beta"`… · Títulos → texto generado |
+| **Se descartan**   | Descripciones, comentarios, mails                                                                                                                 |
+| **Se transforman** | Fechas: todas corridas por el mismo offset (se conservan las duraciones)                                                                          |
 
 - El mapeo de personas y proyectos es **consistente** (misma entidad real → mismo valor
   inventado) para que las métricas por persona/proyecto sigan siendo significativas.

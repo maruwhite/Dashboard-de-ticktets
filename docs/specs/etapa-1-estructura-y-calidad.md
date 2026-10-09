@@ -79,21 +79,21 @@ Solo lo necesario para que haya algo que compilar, lintear y testear:
 
 ### 6. Scripts de la raíz
 
-| Script | Qué hace |
-|---|---|
-| `npm run format` / `format:check` | Prettier escribe / verifica |
-| `npm run lint` | ESLint, cero warnings |
-| `npm run typecheck` | `tsc` en todos los workspaces |
-| `npm test` | Vitest en todos los workspaces |
-| `npm run test:coverage` | Igual, con umbrales de coverage |
-| `npm run build` | Build de backend y frontend |
-| `npm run check` | Todo lo anterior en orden (lo mismo que corre el CI) |
-| `npm run dev` | Backend y frontend juntos en modo desarrollo |
+| Script                            | Qué hace                                             |
+| --------------------------------- | ---------------------------------------------------- |
+| `npm run format` / `format:check` | Prettier escribe / verifica                          |
+| `npm run lint`                    | ESLint, cero warnings                                |
+| `npm run typecheck`               | `tsc` en todos los workspaces                        |
+| `npm test`                        | Vitest en todos los workspaces                       |
+| `npm run test:coverage`           | Igual, con umbrales de coverage                      |
+| `npm run build`                   | Build de backend y frontend                          |
+| `npm run check`                   | Todo lo anterior en orden (lo mismo que corre el CI) |
+| `npm run dev`                     | Backend y frontend juntos en modo desarrollo         |
 
 ### 7. Pre-commit (husky)
 
 - Corre `format:check`, `lint`, `typecheck` y `test`.
-- Además, verificación de seguridad: rechaza el commit si hay archivos *staged* dentro de
+- Además, verificación de seguridad: rechaza el commit si hay archivos _staged_ dentro de
   `data/`, o con extensión `.env`, `.csv`, `.xlsx`, `.xls` (salvo `sample*.csv` /
   `ejemplo*.csv`).
 
@@ -134,4 +134,4 @@ dashboard. Cualquier código de esas etapas.
 3. **Flujo de trabajo:** una rama por etapa y pull request a `main`, con el CI obligatorio
    para mergear (branch protection, la configura Marisa en GitHub).
 4. **Documentación:** se commitea en la rama de esta etapa.
-5. **ADR-0006 (métricas):** los puntos *[a confirmar]* se resuelven antes de la etapa 5.
+5. **ADR-0006 (métricas):** los puntos _[a confirmar]_ se resuelven antes de la etapa 5.
