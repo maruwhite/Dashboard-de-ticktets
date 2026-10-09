@@ -95,3 +95,12 @@ hacerlo a mano.
    responsable nativo de cada proyecto es Marisa.
 2. **Tipo de proyecto:** todos los proyectos se crean como software; el tipo original va en
    el campo "Tipo de proyecto".
+
+## Resultado
+
+- Ejecutada el 2026-10-09 contra `flockit-team-v4apbmqk.atlassian.net`: 231 tickets creados y
+  llevados a su estado, 0 errores, verificados campo por campo contra `tickets.csv`.
+- Durante la ejecución aparecieron comportamientos de Jira Cloud no previstos (plantilla
+  aplicada a los proyectos, esquemas de campos). Se resolvieron en `jira:preparar` y se
+  documentaron en [ADR-0012](../adr/0012-configuracion-de-jira-cloud.md).
+- Los criterios de aceptación 1 a 6 se cumplen.
