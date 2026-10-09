@@ -4,8 +4,24 @@ Dashboard con backend propio que muestra el **estado real** de los tickets de Ji
 cargar nada a mano: el backend sincroniza contra la API de Jira cada 5 minutos y el
 frontend consume solo la API propia.
 
-> **Estado:** las 7 etapas están completas: estructura, anonimización, carga a Jira, sync, métricas,
-> endpoints y UI. Ver el plan en [ADR-0009](docs/adr/0009-proceso-por-etapas.md).
+> **Estado:** las 8 etapas están completas: estructura, anonimización, carga a Jira, sync,
+> métricas, endpoints, UI y modo demo. Ver el plan en
+> [ADR-0009](docs/adr/0009-proceso-por-etapas.md).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/capturas/escritorio-oscuro.png">
+  <img alt="Dashboard de tickets: KPIs, tendencia de creados vs. resueltos por mes y gráficos por estado, tipo, proyecto, prioridad, responsable e informador" src="docs/capturas/escritorio-claro.png">
+</picture>
+
+<sub>Captura en modo demo (231 tickets anonimizados). El dashboard tiene modo claro y oscuro;
+GitHub muestra el que coincide con tu tema. Ver también la
+[versión clara](docs/capturas/escritorio-claro.png) y la
+[versión oscura](docs/capturas/escritorio-oscuro.png).</sub>
+
+**Qué muestra:** 9 KPIs (total, abiertos, en curso, en espera, completados, descartados,
+estancados, vencidos y cycle time), la tendencia mensual de creados vs. resueltos y 8
+distribuciones. Todo se filtra con los segmentadores, el rango de fechas o haciendo clic en
+cualquier barra o porción; los filtros quedan en la URL para compartir la vista.
 
 ## Arquitectura
 
