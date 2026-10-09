@@ -1,5 +1,6 @@
 import type { TicketAnonimizado } from '../anonimizar/anonimizar.js';
-import { JiraError, type ClienteJira } from './cliente.js';
+import { buscarCamposPersonalizados } from './campos.js';
+import { JiraError, resumirMensajes, type ClienteJira } from './cliente.js';
 import {
   aFechaJira,
   CAMPOS,
@@ -9,11 +10,6 @@ import {
   type IdsDeCampos,
 } from './definicion.js';
 
-interface CampoJira {
-  id: string;
-  name: string;
-  custom: boolean;
-}
 interface TipoIncidencia {
   id: string;
   name: string;
@@ -30,7 +26,7 @@ interface ResultadoBulk {
   issues: { key: string }[];
   errors: {
     failedElementNumber: number;
-    elementErrors?: { errorMessages?: string[]; errors?: Record<string, string> };
+    elementErrors?: { errorMessages?: unknown; errors?: unknown };
   }[];
 }
 interface Transicion {
@@ -84,6 +80,32 @@ function camposParaCrear(
 }
 
 /**
+ * Crea un lote con `POST /issue/bulk`. Si fallan todos los elementos, Jira responde 400 con
+ * el mismo formato de errores por elemento: se devuelve igual, para registrarlos uno por uno.
+ */
+async function crearLote(
+  cliente: ClienteJira,
+  lote: readonly TicketAnonimizado[],
+  campos: IdsDeCampos,
+  idTipo: (nombre: string) => string,
+): Promise<ResultadoBulk> {
+  try {
+    return await cliente.post<ResultadoBulk>('/rest/api/3/issue/bulk', {
+      issueUpdates: lote.map((t) => ({
+        fields: camposParaCrear(t, campos, idTipo(t.tipo_incidencia)),
+      })),
+    });
+  } catch (error) {
+    const cuerpo =
+      error instanceof JiraError ? (error.cuerpo as Partial<ResultadoBulk>) : undefined;
+    if (error instanceof JiraError && error.status === 400 && Array.isArray(cuerpo?.errors)) {
+      return { issues: [], errors: cuerpo.errors };
+    }
+    throw error;
+  }
+}
+
+/**
  * Carga los tickets anonimizados en Jira. Idempotente: los tickets se identifican por el campo
  * "ID origen"; los que ya existen no se duplican, solo se completa su transición si quedó
  * pendiente. Sin `confirmar` no escribe nada.
@@ -104,14 +126,14 @@ export async function cargar(
   };
 
   // Configuración necesaria (la crea jira:preparar)
-  const camposJira = await cliente.get<CampoJira[]>('/rest/api/3/field');
+  const camposJira = await buscarCamposPersonalizados(cliente);
   const campos = {} as IdsDeCampos;
   const faltantes: string[] = [];
   for (const [clave, definicion] of Object.entries(CAMPOS) as [
     ClaveCampo,
     (typeof CAMPOS)[ClaveCampo],
   ][]) {
-    const id = camposJira.find((c) => c.custom && mismoNombre(c.name, definicion.nombre))?.id;
+    const id = camposJira.find((c) => mismoNombre(c.name, definicion.nombre))?.id;
     if (id) campos[clave] = id;
     else faltantes.push(`campo "${definicion.nombre}"`);
   }
@@ -175,11 +197,7 @@ export async function cargar(
   const idTipo = (nombre: string) => tipos.find((t) => mismoNombre(t.name, nombre))?.id ?? '';
   for (let inicio = 0; inicio < nuevos.length; inicio += tamanioLote) {
     const lote = nuevos.slice(inicio, inicio + tamanioLote);
-    const respuesta = await cliente.post<ResultadoBulk>('/rest/api/3/issue/bulk', {
-      issueUpdates: lote.map((t) => ({
-        fields: camposParaCrear(t, campos, idTipo(t.tipo_incidencia)),
-      })),
-    });
+    const respuesta = await crearLote(cliente, lote, campos, idTipo);
     const fallidos = new Map(respuesta.errors.map((e) => [e.failedElementNumber, e]));
     let creado = 0;
     lote.forEach((ticket, i) => {
@@ -190,10 +208,7 @@ export async function cargar(
         resumen.creados++;
       } else {
         resumen.errores++;
-        const detalle = [
-          ...(error?.elementErrors?.errorMessages ?? []),
-          ...Object.entries(error?.elementErrors?.errors ?? {}).map(([c, m]) => `${c}: ${m}`),
-        ].join('; ');
+        const detalle = resumirMensajes(error?.elementErrors);
         log(`  Error al crear ${ticket.id_origen}: ${detalle || 'sin detalle'}`);
       }
     });

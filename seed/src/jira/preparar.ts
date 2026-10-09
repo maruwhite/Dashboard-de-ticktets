@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { ClienteJira } from './cliente.js';
+import { buscarCamposPersonalizados, type CampoJira } from './campos.js';
+import { JiraError, type ClienteJira } from './cliente.js';
 import {
   CAMPOS,
   ESTADO_INICIAL,
   ESTADOS,
   mismoNombre,
+  NOMBRE_ESQUEMA_PANTALLAS,
+  NOMBRE_ESQUEMA_TIPOS,
   NOMBRE_ESQUEMA_WORKFLOW,
   NOMBRE_PANTALLA,
   NOMBRE_WORKFLOW,
@@ -17,12 +20,6 @@ import {
 // Formas mínimas de las respuestas de Jira que se usan.
 interface Pagina<T> {
   values: T[];
-}
-interface CampoJira {
-  id: string;
-  name: string;
-  custom: boolean;
-  schema?: { custom?: string };
 }
 interface Pantalla {
   id: number;
@@ -110,14 +107,14 @@ export async function preparar(
 
   // 1. Campos personalizados
   log('Campos personalizados');
-  const existentes = await cliente.get<CampoJira[]>('/rest/api/3/field');
+  const existentes = await buscarCamposPersonalizados(cliente);
   const campos = {} as IdsDeCampos;
   for (const [clave, definicion] of Object.entries(CAMPOS) as [
     ClaveCampo,
     (typeof CAMPOS)[ClaveCampo],
   ][]) {
     const tipo = TIPOS_DE_CAMPO[definicion.tipo];
-    const existente = existentes.find((c) => c.custom && mismoNombre(c.name, definicion.nombre));
+    const existente = existentes.find((c) => mismoNombre(c.name, definicion.nombre));
     if (existente) {
       if (existente.schema?.custom !== tipo.type) {
         throw new Error(
@@ -196,20 +193,7 @@ export async function preparar(
     }
   }
 
-  // 4. Tipos de incidencia (globales)
-  log('Tipos de incidencia');
-  const tipos = (await cliente.get<TipoIncidencia[]>('/rest/api/3/issuetype')).filter(
-    (t) => !t.scope,
-  );
-  for (const nombre of datos.tiposIncidencia) {
-    if (!tipos.some((t) => mismoNombre(t.name, nombre))) {
-      await hacer(`Crear tipo de incidencia "${nombre}"`, () =>
-        cliente.post('/rest/api/3/issuetype', { name: nombre, description: '', hierarchyLevel: 0 }),
-      );
-    }
-  }
-
-  // 5. Workflow con los estados (crea los estados que falten)
+  // 4. Workflow con los estados (crea los estados que falten)
   log(`Workflow "${NOMBRE_WORKFLOW}"`);
   const workflows = await cliente.get<Pagina<{ name: string }>>(
     `/rest/api/3/workflows/search?maxResults=50&queryString=${enc(NOMBRE_WORKFLOW)}`,
@@ -233,7 +217,7 @@ export async function preparar(
     );
   }
 
-  // 6. Esquema de workflow
+  // 5. Esquema de workflow
   log(`Esquema de workflow "${NOMBRE_ESQUEMA_WORKFLOW}"`);
   const esquemasWorkflow = await cliente.get<Pagina<EsquemaDeWorkflow>>(
     '/rest/api/3/workflowscheme?maxResults=50',
@@ -249,7 +233,8 @@ export async function preparar(
     )
   )?.id;
 
-  // 7. Proyectos
+  // 6. Proyectos. Van antes que los tipos de incidencia: al crearlos, Jira aplica una
+  // plantilla que crea sus propios tipos (por ejemplo "Tarea"); así no se duplican.
   log('Proyectos');
   const claves = datos.proyectos.map((p) => `keys=${enc(p.clave)}`).join('&');
   const proyectos = await cliente.get<Pagina<Proyecto>>(`/rest/api/3/project/search?${claves}`);
@@ -268,6 +253,112 @@ export async function preparar(
       }),
     );
   }
+  const existentesAhora = (
+    await cliente.get<Pagina<Proyecto>>(`/rest/api/3/project/search?${claves}`)
+  ).values;
+  const asignacion = {
+    cliente,
+    hacer,
+    proyectos: existentesAhora,
+    pendientes: datos.proyectos.length - existentesAhora.length,
+  };
+
+  // 7. Tipos de incidencia globales
+  log('Tipos de incidencia');
+  const tipos = (await cliente.get<TipoIncidencia[]>('/rest/api/3/issuetype')).filter(
+    (t) => !t.scope,
+  );
+  const idsTipos: string[] = [];
+  for (const nombre of datos.tiposIncidencia) {
+    const coincidencias = tipos.filter((t) => mismoNombre(t.name, nombre));
+    if (coincidencias.length > 1) {
+      throw new Error(
+        `Hay ${String(coincidencias.length)} tipos de incidencia globales llamados "${nombre}"; dejá uno solo`,
+      );
+    }
+    const id =
+      coincidencias[0]?.id ??
+      (
+        await hacer(`Crear tipo de incidencia "${nombre}"`, () =>
+          cliente.post<TipoIncidencia>('/rest/api/3/issuetype', {
+            name: nombre,
+            description: '',
+            hierarchyLevel: nombre.toLowerCase() === 'epic' ? 1 : 0,
+          }),
+        )
+      )?.id;
+    if (id !== undefined) idsTipos.push(id);
+  }
+
+  // 8. Esquema de tipos de incidencia propio, asignado a los proyectos
+  log(`Esquema de tipos "${NOMBRE_ESQUEMA_TIPOS}"`);
+  const esquemasTipos = await cliente.get<Pagina<{ id: string; name: string }>>(
+    '/rest/api/3/issuetypescheme?maxResults=100',
+  );
+  let idEsquemaTipos = esquemasTipos.values.find((e) => e.name === NOMBRE_ESQUEMA_TIPOS)?.id;
+  if (idEsquemaTipos === undefined) {
+    idEsquemaTipos = (
+      await hacer(`Crear esquema de tipos "${NOMBRE_ESQUEMA_TIPOS}"`, () =>
+        cliente.post<{ issueTypeSchemeId: string }>('/rest/api/3/issuetypescheme', {
+          name: NOMBRE_ESQUEMA_TIPOS,
+          description: 'Creado por el dashboard de tickets (seed)',
+          issueTypeIds: idsTipos,
+        }),
+      )
+    )?.issueTypeSchemeId;
+  } else {
+    const esquemaId = idEsquemaTipos;
+    const enEsquemaTipos = new Set(
+      (
+        await cliente.get<Pagina<{ issueTypeId: string }>>(
+          `/rest/api/3/issuetypescheme/mapping?issueTypeSchemeId=${esquemaId}&maxResults=100`,
+        )
+      ).values.map((m) => m.issueTypeId),
+    );
+    const faltan = idsTipos.filter((id) => !enEsquemaTipos.has(id));
+    if (faltan.length > 0) {
+      await hacer(
+        `Agregar ${String(faltan.length)} tipos al esquema "${NOMBRE_ESQUEMA_TIPOS}"`,
+        () =>
+          cliente.put(`/rest/api/3/issuetypescheme/${esquemaId}/issuetype`, {
+            issueTypeIds: faltan,
+          }),
+      );
+    }
+  }
+  await asignarEsquema({
+    ...asignacion,
+    ruta: '/rest/api/3/issuetypescheme/project',
+    clave: 'issueTypeScheme',
+    campoId: 'issueTypeSchemeId',
+    idEsquema: idEsquemaTipos,
+    descripcion: `esquema de tipos "${NOMBRE_ESQUEMA_TIPOS}"`,
+  });
+
+  // 9. Pantallas: los proyectos usan el esquema por defecto, cuya pantalla tiene los campos
+  log(`Esquema de pantallas "${NOMBRE_ESQUEMA_PANTALLAS}"`);
+  const esquemasPantallas = await cliente.get<Pagina<{ id: string; name: string }>>(
+    '/rest/api/3/issuetypescreenscheme?maxResults=100',
+  );
+  const idEsquemaPantallas = esquemasPantallas.values.find(
+    (e) => e.name === NOMBRE_ESQUEMA_PANTALLAS,
+  )?.id;
+  if (idEsquemaPantallas === undefined) {
+    throw new Error(`No se encontró el esquema "${NOMBRE_ESQUEMA_PANTALLAS}"`);
+  }
+  await asignarEsquema({
+    ...asignacion,
+    ruta: '/rest/api/3/issuetypescreenscheme/project',
+    clave: 'issueTypeScreenScheme',
+    campoId: 'issueTypeScreenSchemeId',
+    idEsquema: idEsquemaPantallas,
+    descripcion: `esquema de pantallas "${NOMBRE_ESQUEMA_PANTALLAS}"`,
+  });
+
+  // 10. Esquemas de campos (modelo nuevo de Jira Cloud): un campo personalizado solo se puede
+  // completar en los proyectos cuyo esquema de campos lo incluye.
+  log('Esquemas de campos');
+  await asociarCamposAEsquemas({ ...asignacion, campos: Object.values(campos) });
 
   log(
     cambios === 0
@@ -275,6 +366,106 @@ export async function preparar(
       : `${String(cambios)} cambios ${confirmar ? 'aplicados' : 'pendientes'}.`,
   );
   return { campos, cambios };
+}
+
+type Hacer = <T>(descripcion: string, accion: () => Promise<T>) => Promise<T | undefined>;
+
+interface Asignacion {
+  cliente: ClienteJira;
+  hacer: Hacer;
+  /** Proyectos que ya existen en Jira. */
+  proyectos: readonly Proyecto[];
+  /** Proyectos que se crearían (solo en simulación). */
+  pendientes: number;
+  ruta: string;
+  clave: 'issueTypeScheme' | 'issueTypeScreenScheme';
+  campoId: 'issueTypeSchemeId' | 'issueTypeScreenSchemeId';
+  idEsquema: string | undefined;
+  descripcion: string;
+}
+
+/** Asigna un esquema a cada proyecto que no lo tenga. */
+async function asignarEsquema(a: Asignacion): Promise<void> {
+  if (a.proyectos.length > 0) {
+    const filtro = a.proyectos.map((p) => `projectId=${p.id}`).join('&');
+    const actuales = await a.cliente.get<
+      Pagina<{ projectIds: string[] } & Partial<Record<Asignacion['clave'], { id: string }>>>
+    >(`${a.ruta}?${filtro}`);
+    for (const proyecto of a.proyectos) {
+      const actual = actuales.values.find((v) => v.projectIds.includes(proyecto.id))?.[a.clave];
+      if (actual !== undefined && actual.id === a.idEsquema) continue;
+      await a.hacer(`Asignar ${a.descripcion} a ${proyecto.key}`, () =>
+        a.cliente.put(a.ruta, { [a.campoId]: a.idEsquema, projectId: proyecto.id }),
+      );
+    }
+  }
+  if (a.pendientes > 0) {
+    await a.hacer(`Asignar ${a.descripcion} a ${String(a.pendientes)} proyectos nuevos`, () =>
+      Promise.resolve(),
+    );
+  }
+}
+
+interface AsociacionDeCampos {
+  cliente: ClienteJira;
+  hacer: Hacer;
+  proyectos: readonly Proyecto[];
+  pendientes: number;
+  campos: readonly string[];
+}
+
+/**
+ * Asocia los campos a los esquemas de campos de los proyectos (y al esquema por defecto, que
+ * es el que recibirán los proyectos que se crearían en simulación). En sitios sin esquemas de
+ * campos (modelo anterior) no hace nada.
+ */
+async function asociarCamposAEsquemas(a: AsociacionDeCampos): Promise<void> {
+  let esquemas: Pagina<{ id: number; isDefault: boolean }>;
+  try {
+    esquemas = await a.cliente.get('/rest/api/3/config/fieldschemes?maxResults=50');
+  } catch (error) {
+    if (error instanceof JiraError && error.status === 404) {
+      return; // el sitio usa configuraciones de campos (modelo anterior)
+    }
+    throw error;
+  }
+
+  const destino = new Set<number>();
+  if (a.proyectos.length > 0) {
+    const filtro = a.proyectos.map((p) => `projectId=${p.id}`).join('&');
+    const deProyectos = await a.cliente.get<Pagina<{ schemeId: number }>>(
+      `/rest/api/3/config/fieldschemes/projects?${filtro}`,
+    );
+    for (const v of deProyectos.values) destino.add(v.schemeId);
+  }
+  const porDefecto = esquemas.values.find((e) => e.isDefault)?.id;
+  if (a.pendientes > 0 && porDefecto !== undefined) destino.add(porDefecto);
+
+  const camposReales = a.campos.filter((id) => id !== SIN_CREAR);
+  const faltan = new Set<string>(a.campos.length > camposReales.length ? [SIN_CREAR] : []);
+  for (const esquema of destino) {
+    const presentes = new Set<string>();
+    for (let desde = 0; ;) {
+      const pagina = await a.cliente.get<Pagina<{ fieldId: string }> & { isLast?: boolean }>(
+        `/rest/api/3/config/fieldschemes/${String(esquema)}/fields?maxResults=50&startAt=${String(desde)}`,
+      );
+      for (const v of pagina.values) presentes.add(v.fieldId);
+      desde += pagina.values.length;
+      if (pagina.isLast !== false || pagina.values.length === 0) break;
+    }
+    for (const id of camposReales) if (!presentes.has(id)) faltan.add(id);
+  }
+  if (faltan.size === 0 || destino.size === 0) return;
+
+  const schemeIds = [...destino];
+  await a.hacer(
+    `Asociar ${String(faltan.size)} campos a los esquemas de campos ${schemeIds.join(', ')}`,
+    () =>
+      a.cliente.put(
+        '/rest/api/3/config/fieldschemes/fields',
+        Object.fromEntries([...faltan].map((id) => [id, [{ schemeIds }]])),
+      ),
+  );
 }
 
 /**

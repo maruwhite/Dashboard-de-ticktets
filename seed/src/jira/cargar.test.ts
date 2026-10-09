@@ -120,6 +120,29 @@ describe('cargar', () => {
     await expect(ejecutar(jira, [ticket()], true)).rejects.toThrow('Falta configuración en Jira');
   });
 
+  it('si fallan todos los tickets de un lote (400 de Jira), los registra y sigue', async () => {
+    const jira = await jiraPreparado();
+    jira.titulosQueFallan.add('FALLA');
+    const log: string[] = [];
+    const tickets = [ticket({ titulo: 'FALLA' }), ticket({ titulo: 'FALLA' }), ticket()];
+
+    const resumen = await ejecutar(jira, tickets, true, log);
+
+    expect(resumen).toMatchObject({ creados: 1, errores: 2 });
+    expect(log).toContain(`  Error al crear ${tickets[1]?.id_origen ?? ''}: summary: inválido`);
+  });
+
+  it('informa los campos que Jira no permite completar', async () => {
+    const jira = await jiraPreparado();
+    jira.camposEnEsquema.clear();
+    const log: string[] = [];
+
+    const resumen = await ejecutar(jira, [ticket()], true, log);
+
+    expect(resumen.errores).toBe(1);
+    expect(log.find((l) => l.startsWith('  Error al crear'))).toContain('cannot be set');
+  });
+
   it('cuenta los errores de creación y de transición sin cortar la carga', async () => {
     const jira = await jiraPreparado();
     jira.estadosSinTransicion.add('Rechazado');

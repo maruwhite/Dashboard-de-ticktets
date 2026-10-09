@@ -30,6 +30,15 @@ export class JiraFalso {
   erroresDeValidacion: { level: string; message: string }[] = [];
   esquemasWorkflow: { id: number; name: string }[] = [];
   proyectos: { id: string; key: string }[] = [];
+  /** Esquemas de tipos de incidencia: id → ids de tipos. */
+  esquemasTipos = new Map<string, { name: string; tipos: Set<string> }>();
+  /** Proyecto → esquema de tipos y esquema de pantallas asignados. */
+  esquemaTiposDe = new Map<string, string>();
+  esquemaPantallasDe = new Map<string, string>();
+  /** Campos asociados al esquema de campos por defecto (id 1). */
+  camposEnEsquema = new Set<string>();
+  /** Simula un sitio con el modelo anterior (sin esquemas de campos). */
+  sinEsquemasDeCampos = false;
   issues: Issue[] = [];
   /** Títulos que hacen fallar la creación del ticket. */
   titulosQueFallan = new Set<string>();
@@ -78,7 +87,14 @@ export class JiraFalso {
 
     switch (ruta) {
       case 'GET /rest/api/3/field':
-        return json(this.campos);
+        // Como Jira real: omite los campos que no están en ninguna pantalla de proyecto.
+        return json([]);
+      case 'GET /rest/api/3/field/search': {
+        // Páginas de 3 para ejercitar la paginación.
+        const desde = Number(searchParams.get('startAt') ?? 0);
+        const values = this.campos.slice(desde, desde + 3);
+        return json({ values, isLast: desde + 3 >= this.campos.length });
+      }
       case 'POST /rest/api/3/field': {
         const campo = {
           id: `customfield_${this.id()}`,
@@ -118,9 +134,11 @@ export class JiraFalso {
       }
       case 'GET /rest/api/3/issuetype':
         return json(this.tipos);
-      case 'POST /rest/api/3/issuetype':
-        this.tipos.push({ id: this.id(), name: String(c.name) });
-        return json({}, 201);
+      case 'POST /rest/api/3/issuetype': {
+        const tipo = { id: this.id(), name: String(c.name) };
+        this.tipos.push(tipo);
+        return json(tipo, 201);
+      }
       case 'GET /rest/api/3/workflows/search':
         return json({ values: this.workflows.map((name) => ({ name })) });
       case 'GET /rest/api/3/statuses/search':
@@ -145,9 +163,77 @@ export class JiraFalso {
       }
       case 'GET /rest/api/3/myself':
         return json({ accountId: 'cuenta-falsa' });
-      case 'POST /rest/api/3/project':
-        this.proyectos.push({ id: this.id(), key: String(c.key) });
+      case 'POST /rest/api/3/project': {
+        // Como Jira real: sin plantilla aplica "Simple Issue Tracking", que crea un tipo
+        // global "Tarea" (aunque ya exista otro) y esquemas propios del proyecto.
+        const proyecto = { id: this.id(), key: String(c.key) };
+        this.proyectos.push(proyecto);
+        if (this.proyectos.length === 1) this.tipos.push({ id: this.id(), name: 'Tarea' });
+        const esquema = this.id();
+        this.esquemasTipos.set(esquema, { name: `${proyecto.key}: Simple`, tipos: new Set() });
+        this.esquemaTiposDe.set(proyecto.id, esquema);
+        this.esquemaPantallasDe.set(proyecto.id, `pantallas-${proyecto.key}`);
         return json({}, 201);
+      }
+      case 'GET /rest/api/3/issuetypescheme':
+        return json({
+          values: [...this.esquemasTipos].map(([id, e]) => ({ id, name: e.name })),
+        });
+      case 'POST /rest/api/3/issuetypescheme': {
+        const id = this.id();
+        this.esquemasTipos.set(id, {
+          name: String(c.name),
+          tipos: new Set(c.issueTypeIds as string[]),
+        });
+        return json({ issueTypeSchemeId: id }, 201);
+      }
+      case 'GET /rest/api/3/issuetypescheme/mapping': {
+        const id = searchParams.get('issueTypeSchemeId') ?? '';
+        const tipos = [...(this.esquemasTipos.get(id)?.tipos ?? [])];
+        return json({ values: tipos.map((issueTypeId) => ({ issueTypeId })) });
+      }
+      case 'GET /rest/api/3/issuetypescheme/project':
+      case 'GET /rest/api/3/issuetypescreenscheme/project': {
+        const deTipos = ruta.includes('issuetypescheme');
+        const asignados = deTipos ? this.esquemaTiposDe : this.esquemaPantallasDe;
+        const clave = deTipos ? 'issueTypeScheme' : 'issueTypeScreenScheme';
+        return json({
+          values: searchParams
+            .getAll('projectId')
+            .map((p) => ({ [clave]: { id: asignados.get(p) }, projectIds: [p] })),
+        });
+      }
+      case 'PUT /rest/api/3/issuetypescheme/project':
+        this.esquemaTiposDe.set(String(c.projectId), String(c.issueTypeSchemeId));
+        return new Response(null, { status: 204 });
+      case 'PUT /rest/api/3/issuetypescreenscheme/project':
+        this.esquemaPantallasDe.set(String(c.projectId), String(c.issueTypeScreenSchemeId));
+        return new Response(null, { status: 204 });
+      case 'GET /rest/api/3/config/fieldschemes':
+        if (this.sinEsquemasDeCampos) return json({ errorMessages: ['No encontrado'] }, 404);
+        return json({ values: [{ id: 1, isDefault: true }] });
+      case 'GET /rest/api/3/config/fieldschemes/projects':
+        return json({
+          values: searchParams.getAll('projectId').map((p) => ({ projectId: p, schemeId: 1 })),
+        });
+      case 'GET /rest/api/3/config/fieldschemes/1/fields': {
+        // Páginas de 2 para ejercitar la paginación.
+        const desde = Number(searchParams.get('startAt') ?? 0);
+        const todos = [...this.camposEnEsquema];
+        return json({
+          values: todos.slice(desde, desde + 2).map((fieldId) => ({ fieldId })),
+          isLast: desde + 2 >= todos.length,
+        });
+      }
+      case 'PUT /rest/api/3/config/fieldschemes/fields':
+        for (const [id, asociaciones] of Object.entries(
+          c as Record<string, { schemeIds: number[] }[]>,
+        )) {
+          if (asociaciones.some((x) => x.schemeIds.includes(1))) this.camposEnEsquema.add(id);
+        }
+        return new Response(null, { status: 204 });
+      case 'GET /rest/api/3/issuetypescreenscheme':
+        return json({ values: [{ id: '1', name: 'Default Issue Type Screen Scheme' }] });
       case 'POST /rest/api/3/search/jql': {
         // Páginas de 2 para ejercitar la paginación.
         const desde = Number(c.nextPageToken ?? 0);
@@ -159,6 +245,25 @@ export class JiraFalso {
         const issues: { key: string }[] = [];
         const errors: unknown[] = [];
         (c.issueUpdates as { fields: Cuerpo }[]).forEach(({ fields }, i) => {
+          // Como Jira real: un campo personalizado fuera de la pantalla o del esquema de campos
+          // no se puede completar.
+          const noPermitidos = Object.keys(fields).filter(
+            (k) =>
+              k.startsWith('customfield_') &&
+              (!this.enPantalla.has(k) ||
+                (!this.sinEsquemasDeCampos && !this.camposEnEsquema.has(k))),
+          );
+          if (noPermitidos.length > 0) {
+            errors.push({
+              failedElementNumber: i,
+              elementErrors: {
+                errors: Object.fromEntries(
+                  noPermitidos.map((k) => [k, `Field '${k}' cannot be set.`]),
+                ),
+              },
+            });
+            return;
+          }
           if (this.titulosQueFallan.has(String(fields.summary))) {
             errors.push({
               failedElementNumber: i,
@@ -174,8 +279,16 @@ export class JiraFalso {
           this.issues.push(issue);
           issues.push({ key: issue.key });
         });
-        return json({ issues, errors }, 201);
+        // Como Jira real: si fallan todos los elementos, responde 400 con el mismo formato.
+        return json({ issues, errors }, issues.length === 0 && errors.length > 0 ? 400 : 201);
       }
+    }
+
+    const agregarTipos = /^PUT \/rest\/api\/3\/issuetypescheme\/([^/]+)\/issuetype$/.exec(ruta);
+    const esquema = this.esquemasTipos.get(agregarTipos?.[1] ?? '');
+    if (esquema) {
+      for (const id of c.issueTypeIds as string[]) esquema.tipos.add(id);
+      return new Response(null, { status: 204 });
     }
 
     const transicion = /^(GET|POST) \/rest\/api\/3\/issue\/([^/]+)\/transitions$/.exec(ruta);

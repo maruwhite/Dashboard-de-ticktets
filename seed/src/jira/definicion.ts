@@ -19,6 +19,9 @@ export const ESTADOS: readonly { nombre: string; categoria: CategoriaEstado }[] 
 export const ESTADO_INICIAL = 'Planificado';
 export const NOMBRE_WORKFLOW = 'Dashboard de tickets';
 export const NOMBRE_ESQUEMA_WORKFLOW = 'Dashboard de tickets';
+export const NOMBRE_ESQUEMA_TIPOS = 'Dashboard de tickets';
+/** Esquema de pantallas por defecto de Jira: usa la "Default Screen" para crear y editar. */
+export const NOMBRE_ESQUEMA_PANTALLAS = 'Default Issue Type Screen Scheme';
 export const NOMBRE_PANTALLA = 'Default Screen';
 
 export type TipoCampo = 'fecha' | 'texto';

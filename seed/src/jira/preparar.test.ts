@@ -58,6 +58,80 @@ describe('preparar', () => {
     });
   });
 
+  it('asigna a los proyectos un esquema de tipos propio y el esquema de pantallas por defecto', async () => {
+    const jira = new JiraFalso();
+    const log: string[] = [];
+
+    await ejecutar(jira, true, log);
+
+    const [idEsquema, esquema] =
+      [...jira.esquemasTipos].find(([, e]) => e.name === 'Dashboard de tickets') ?? [];
+    const idsEsperados = jira.tipos.filter((t) => !t.scope).map((t) => t.id);
+    expect([...(esquema?.tipos ?? [])].sort()).toEqual(idsEsperados.sort());
+    for (const proyecto of jira.proyectos) {
+      expect(jira.esquemaTiposDe.get(proyecto.id)).toBe(idEsquema);
+      expect(jira.esquemaPantallasDe.get(proyecto.id)).toBe('1');
+    }
+    expect(log).toContain('  Asignar esquema de tipos "Dashboard de tickets" a PRJA');
+  });
+
+  it('en simulación anuncia las asignaciones para los proyectos que se crearían', async () => {
+    const log: string[] = [];
+    await ejecutar(new JiraFalso(), false, log);
+    expect(log).toContain(
+      '  [simulación] Asignar esquema de tipos "Dashboard de tickets" a 2 proyectos nuevos',
+    );
+  });
+
+  it('completa el esquema de tipos si le falta alguno', async () => {
+    const jira = new JiraFalso();
+    await ejecutar(jira, true);
+    const esquema = [...jira.esquemasTipos.values()].find((e) => e.name === 'Dashboard de tickets');
+    const [quitado] = [...(esquema?.tipos ?? [])];
+    esquema?.tipos.delete(quitado ?? '');
+
+    const { cambios } = await ejecutar(jira, true);
+
+    expect(cambios).toBe(1);
+    expect(esquema?.tipos.has(quitado ?? '')).toBe(true);
+  });
+
+  it('asocia los campos al esquema de campos de los proyectos', async () => {
+    const jira = new JiraFalso();
+    jira.camposEnEsquema.add('summary');
+
+    const { campos } = await ejecutar(jira, true);
+
+    for (const id of Object.values(campos)) expect(jira.camposEnEsquema.has(id)).toBe(true);
+    const pedido = jira.llamadas.find((l) => l.ruta === '/rest/api/3/config/fieldschemes/fields');
+    expect(pedido?.cuerpo).toEqual(
+      Object.fromEntries(Object.values(campos).map((id) => [id, [{ schemeIds: [1] }]])),
+    );
+  });
+
+  it('en simulación anuncia la asociación de campos', async () => {
+    const log: string[] = [];
+    await ejecutar(new JiraFalso(), false, log);
+    expect(log).toContain('  [simulación] Asociar 1 campos a los esquemas de campos 1');
+  });
+
+  it('en sitios sin esquemas de campos (modelo anterior) no los toca', async () => {
+    const jira = new JiraFalso();
+    jira.sinEsquemasDeCampos = true;
+
+    await ejecutar(jira, true);
+
+    expect(jira.llamadas.some((l) => l.ruta.includes('/config/fieldschemes/'))).toBe(false);
+  });
+
+  it('falla si hay tipos de incidencia globales duplicados', async () => {
+    const jira = new JiraFalso();
+    jira.tipos.push({ id: '9', name: 'Tarea' }); // la plantilla del proyecto crea otra "Tarea"
+    await expect(ejecutar(jira, true)).rejects.toThrow(
+      'Hay 2 tipos de incidencia globales llamados "Tarea"',
+    );
+  });
+
   it('es idempotente: la segunda ejecución no cambia nada', async () => {
     const jira = new JiraFalso();
     const primera = await ejecutar(jira, true);

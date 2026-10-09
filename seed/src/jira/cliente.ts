@@ -16,26 +16,37 @@ export class JiraError extends Error {
     readonly status: number,
     readonly ruta: string,
     detalle: string,
+    /** Cuerpo de la respuesta ya parseado (si era JSON), para errores con estructura propia. */
+    readonly cuerpo?: unknown,
   ) {
     super(`Jira respondió ${String(status)} en ${ruta}${detalle ? `: ${detalle}` : ''}`);
   }
 }
 
 interface CuerpoDeError {
-  errorMessages?: string[];
-  errors?: Record<string, string>;
+  errorMessages?: unknown;
+  errors?: unknown;
 }
 
-function resumirError(texto: string): string {
+/** Junta los mensajes de error de Jira; ignora lo que no sea texto. */
+export function resumirMensajes(cuerpo: CuerpoDeError | undefined): string {
+  const mensajes = Array.isArray(cuerpo?.errorMessages)
+    ? cuerpo.errorMessages.filter((m): m is string => typeof m === 'string')
+    : [];
+  const errores =
+    cuerpo?.errors !== null && typeof cuerpo?.errors === 'object' && !Array.isArray(cuerpo.errors)
+      ? Object.entries(cuerpo.errors as Record<string, unknown>)
+          .filter((entrada): entrada is [string, string] => typeof entrada[1] === 'string')
+          .map(([campo, mensaje]) => `${campo}: ${mensaje}`)
+      : [];
+  return [...mensajes, ...errores].join('; ').slice(0, 500);
+}
+
+function parsear(texto: string): unknown {
   try {
-    const cuerpo = JSON.parse(texto) as CuerpoDeError;
-    const mensajes = [
-      ...(cuerpo.errorMessages ?? []),
-      ...Object.entries(cuerpo.errors ?? {}).map(([campo, mensaje]) => `${campo}: ${mensaje}`),
-    ];
-    return mensajes.join('; ').slice(0, 500);
+    return JSON.parse(texto) as unknown;
   } catch {
-    return '';
+    return undefined;
   }
 }
 
@@ -93,7 +104,15 @@ export class ClienteJira {
       }
 
       const texto = await respuesta.text();
-      if (!respuesta.ok) throw new JiraError(respuesta.status, ruta, resumirError(texto));
+      if (!respuesta.ok) {
+        const cuerpoError = parsear(texto);
+        throw new JiraError(
+          respuesta.status,
+          ruta,
+          resumirMensajes(cuerpoError as CuerpoDeError | undefined),
+          cuerpoError,
+        );
+      }
       return (texto === '' ? undefined : JSON.parse(texto)) as T;
     }
   }
