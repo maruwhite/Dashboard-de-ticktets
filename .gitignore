@@ -1,0 +1,26 @@
+# Datos reales y exports (nunca se suben)
+data/
+*.csv
+!**/sample*.csv
+!**/ejemplo*.csv
+
+# Credenciales y configuración local
+.env
+.env.*
+!.env.example
+
+# Dependencias y builds
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
