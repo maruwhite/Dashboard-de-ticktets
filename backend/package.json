@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@dashboard/shared": "*",
     "express": "^5.3.0",
     "pino": "^10.4.0",
     "zod": "^4.6.5"

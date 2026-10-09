@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
-import type { Ticket } from '../jira/mapeo.js';
+import type { Ticket } from '@dashboard/shared';
 
 export interface RegistroSync {
   inicio: string;
