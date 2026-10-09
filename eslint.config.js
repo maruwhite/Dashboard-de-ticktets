@@ -32,6 +32,9 @@ export default defineConfig(
       // Todo eslint-disable tiene que explicar por qué.
       '@eslint-community/eslint-comments/require-description': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
+      // Parámetros que empiezan con "_" pueden quedar sin usar (por ejemplo, el cuarto
+      // parámetro que Express exige en los manejadores de errores), igual que en TypeScript.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/ban-ts-comment': [
         'error',
         { 'ts-expect-error': 'allow-with-description' },

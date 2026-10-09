@@ -20,9 +20,10 @@ const db = abrirBase(config.DATABASE_PATH);
 const repositorio = new Repositorio(db);
 
 let programador: ProgramadorDeSync | undefined;
+let sincronizador: Sincronizador | undefined;
 if (config.SYNC_ENABLED) {
   const jira = configJira(config);
-  const sincronizador = new Sincronizador({
+  sincronizador = new Sincronizador({
     cliente: new ClienteJira(jira),
     repositorio,
     jira,
@@ -35,7 +36,17 @@ if (config.SYNC_ENABLED) {
   logger.warn('Sync con Jira desactivado (SYNC_ENABLED=false)');
 }
 
-const servidor = createApp().listen(config.PORT, () => {
+const app = createApp({
+  repositorio,
+  logger,
+  sync: {
+    activo: config.SYNC_ENABLED,
+    intervaloMinutos: config.SYNC_INTERVAL_MINUTES,
+    ...(sincronizador ? { sincronizador } : {}),
+  },
+});
+
+const servidor = app.listen(config.PORT, () => {
   logger.info({ port: config.PORT }, 'Backend escuchando');
 });
 
