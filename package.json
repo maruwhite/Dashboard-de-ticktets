@@ -13,14 +13,15 @@
     "seed"
   ],
   "scripts": {
-    "prepare": "husky",
-    "dev": "concurrently -n backend,frontend -c blue,magenta \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "prepare": "husky && npm run build:shared",
+    "build:shared": "npm run build -w @dashboard/shared",
+    "dev": "npm run build:shared && concurrently -n backend,frontend -c blue,magenta \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint . --max-warnings 0",
-    "typecheck": "npm run typecheck --workspaces",
-    "test": "npm run test --workspaces",
-    "test:coverage": "npm run test:coverage --workspaces",
+    "lint": "npm run build:shared && eslint . --max-warnings 0",
+    "typecheck": "npm run build:shared && npm run typecheck --workspaces",
+    "test": "npm run build:shared && npm run test --workspaces",
+    "test:coverage": "npm run build:shared && npm run test:coverage --workspaces",
     "build": "npm run build --workspaces",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build"
   },

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { describe, expect, it } from 'vitest';
-import type { Ticket } from '../jira/mapeo.js';
+import type { Ticket } from '@dashboard/shared';
 import { abrirBase, MIGRACIONES, migrar } from './base.js';
 import { Repositorio } from './repositorio.js';
 

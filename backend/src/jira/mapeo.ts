@@ -1,26 +1,6 @@
+import type { Ticket } from '@dashboard/shared';
 import type { CampoPersonalizado } from '../config.js';
 import type { IssueJira } from './cliente.js';
-
-/** Ticket tal como se guarda en SQLite. Fechas en ISO 8601 UTC. */
-export interface Ticket {
-  clave: string;
-  idOrigen: string;
-  tipo: string;
-  estado: string;
-  prioridad: string;
-  proyectoClave: string;
-  proyectoNombre: string;
-  tipoProyecto: string;
-  responsable: string;
-  informador: string;
-  responsableProyecto: string;
-  titulo: string;
-  creada: string;
-  resuelta: string | null;
-  actualizada: string;
-  /** Fecha de vencimiento (`AAAA-MM-DD`), si tiene. */
-  vencimiento: string | null;
-}
 
 /** Campos nativos que el sync pide a Jira, además de los personalizados. */
 export const CAMPOS_NATIVOS = [
