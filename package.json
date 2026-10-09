@@ -9,7 +9,8 @@
   "workspaces": [
     "packages/shared",
     "backend",
-    "frontend"
+    "frontend",
+    "seed"
   ],
   "scripts": {
     "prepare": "husky",

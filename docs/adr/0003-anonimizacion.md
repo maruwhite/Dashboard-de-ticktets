@@ -1,6 +1,6 @@
 # ADR-0003: Anonimización del export real
 
-- **Estado:** Aceptado
+- **Estado:** Aceptado — modificado parcialmente por [ADR-0010](0010-ajustes-etapas-2-a-4.md)
 - **Fecha:** 2026-10-09
 
 ## Contexto
