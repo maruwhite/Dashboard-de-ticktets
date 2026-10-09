@@ -1,0 +1,20 @@
+{
+  "name": "@dashboard/seed",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scripts para anonimizar el export de Jira y cargarlo en el Jira de prueba",
+  "scripts": {
+    "anonimizar": "tsx src/anonimizar/cli.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}
