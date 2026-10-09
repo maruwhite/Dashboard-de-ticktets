@@ -255,6 +255,19 @@ describe('calcularOpciones', () => {
   });
 });
 
+describe('orden natural', () => {
+  it('ordena "Usuario 2" antes que "Usuario 10" en las opciones', () => {
+    const opciones = calcularOpciones(
+      ['Usuario 10', 'Usuario 2', 'Usuario 1'].map((informador) => ticket({ informador })),
+    );
+    expect(opciones.informador.map((o) => o.valor)).toEqual([
+      'Usuario 1',
+      'Usuario 2',
+      'Usuario 10',
+    ]);
+  });
+});
+
 describe('calcularDashboard', () => {
   it('aplica los filtros a KPIs, distribuciones y tendencia, pero no a las opciones', () => {
     const tickets = [

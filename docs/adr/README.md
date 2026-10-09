@@ -18,3 +18,4 @@ como "Reemplazado por ADR-XXXX".
 | [0010](0010-ajustes-etapas-2-a-4.md)          | Ajustes al aprobar las etapas 2 a 4                   | Aceptado                       |
 | [0011](0011-reparto-de-personas.md)           | Reparto de personas y equipo ficticio de responsables | Aceptado                       |
 | [0012](0012-configuracion-de-jira-cloud.md)   | Configuración de Jira Cloud para la carga             | Aceptado                       |
+| [0013](0013-estilo-visual-y-paleta.md)        | Estilo visual y paleta de colores                     | Aceptado                       |

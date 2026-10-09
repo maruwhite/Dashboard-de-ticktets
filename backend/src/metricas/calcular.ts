@@ -30,7 +30,8 @@ const VALOR: Record<Dimension, (t: Ticket) => string> = {
   responsableProyecto: (t) => t.responsableProyecto,
 };
 
-const comparar = (a: string, b: string) => a.localeCompare(b, 'es');
+/** Orden natural: "Usuario 2" antes que "Usuario 10". */
+const comparar = (a: string, b: string) => a.localeCompare(b, 'es', { numeric: true });
 const etiqueta = (valor: string) => (valor === '' ? SIN_DATO : valor);
 const redondear = (dias: number) => Math.round(dias * 10) / 10;
 
