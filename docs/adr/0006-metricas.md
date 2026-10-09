@@ -35,6 +35,14 @@ segmentadores. Grupos de estado según ADR-0005.
   prioridad, informador, responsable, responsable del proyecto. Torta solo si hay ≤ 6
   categorías.
 
+## Nota sobre "vencidos" **[a confirmar]**
+
+El export real **no tiene fecha de vencimiento**, así que con la definición de arriba el KPI
+siempre daría 0. Alternativas a decidir antes de la etapa 5: (a) mostrarlo igual, en 0, y
+que funcione si en Jira se cargan vencimientos a mano; (b) definir "vencido" como un abierto
+con más de N días desde su creación (un SLA); (c) generar vencimientos al anonimizar
+(creada + N días según el tipo).
+
 ## Nota sobre "estancados" **[a confirmar]**
 
 "Sin cambios" se mide con `updated` de Jira. Después de la carga inicial, todos los tickets

@@ -21,7 +21,8 @@ data/Tickets_jira.xlsx ──(1) anonimizar──► data/anonimizado.* ──(r
 
 - Entrada: `data/Tickets_jira.xlsx`. Salida: archivos dentro de `data/` (ignorada por git).
 - **Se conservan:** tipo de incidencia, estado, prioridad, tipo de proyecto.
-- **Se reemplazan:** personas → hasta 9 usuarios inventados (mapeo consistente: la misma
+- **Se reemplazan:** personas → hasta 9 usuarios inventados, guardados como texto en Jira
+  (ADR-0010; mapeo consistente: la misma
   persona real siempre es el mismo usuario inventado); proyectos → `PRJA "Proyecto Alfa"`,
   `PRJB "Proyecto Beta"`…; títulos → texto generado.
 - **Se descartan:** descripciones, comentarios, mails.
